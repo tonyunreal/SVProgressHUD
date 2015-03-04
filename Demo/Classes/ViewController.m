@@ -52,24 +52,24 @@
 #pragma mark - Show Methods Sample
 
 - (void)show {
-	[SVProgressHUD show];
+	[SVProgressHUD showWithMaskType:SVProgressHUDMaskTypeBlack];
 }
 
 - (void)showWithStatus {
-	[SVProgressHUD showWithStatus:@"Doing Stuff"];
+	[SVProgressHUD showWithStatus:@"Doing Stuff" maskType:SVProgressHUDMaskTypeBlack];
 }
 
 static float progress = 0.0f;
 
 - (IBAction)showWithProgress:(id)sender {
     progress = 0.0f;
-    [SVProgressHUD showProgress:0 status:@"Loading"];
+    [SVProgressHUD showProgress:0 status:@"Loading" maskType:SVProgressHUDMaskTypeBlack];
     [self performSelector:@selector(increaseProgress) withObject:nil afterDelay:0.3f];
 }
 
 - (void)increaseProgress {
     progress+=0.1f;
-    [SVProgressHUD showProgress:progress status:@"Loading"];
+    [SVProgressHUD showProgress:progress status:@"Loading" maskType:SVProgressHUDMaskTypeBlack];
 
     if(progress < 1.0f)
         [self performSelector:@selector(increaseProgress) withObject:nil afterDelay:0.3f];
@@ -85,15 +85,15 @@ static float progress = 0.0f;
 }
 
 - (IBAction)dismissInfo{
-    [SVProgressHUD showInfoWithStatus:@"Useful Information."];
+    [SVProgressHUD showInfoWithStatus:@"Useful Information." maskType:SVProgressHUDMaskTypeBlack];
 }
 
 - (void)dismissSuccess {
-	[SVProgressHUD showSuccessWithStatus:@"Great Success!"];
+	[SVProgressHUD showSuccessWithStatus:@"Great Success!" maskType:SVProgressHUDMaskTypeBlack];
 }
 
 - (void)dismissError {
-	[SVProgressHUD showErrorWithStatus:@"Failed with Error"];
+	[SVProgressHUD showErrorWithStatus:@"Failed with Error" maskType:SVProgressHUDMaskTypeBlack];
 }
 
 @end
