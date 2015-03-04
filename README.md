@@ -1,28 +1,8 @@
 # SVProgressHUD
 
-`SVProgressHUD` is a clean and easy-to-use HUD meant to display the progress of an ongoing task.
-
-![SVProgressHUD](http://f.cl.ly/items/2G1F1Z0M0k0h2U3V1p39/SVProgressHUD.gif)
+`SVProgressHUD` is a clean and powerful HUD tool meant to display crucial information for the user, the progress of an ongoing task, or to present a set of options for the user to choose from.
 
 ## Installation
-
-### From CocoaPods
-
-[CocoaPods](http://cocoapods.org) is a dependency manager for Objective-C, which automates and simplifies the process of using 3rd-party libraries like `SVProgressHUD` in your projects. Simply add the following line to your [Podfile](http://guides.cocoapods.org/using/using-cocoapods.html):
-
-```ruby
-pod 'SVProgressHUD'
-```
-
-If you want to use the latest features of `SVProgressHUD` add `:head`:
-
-```ruby
-pod 'SVProgressHUD', :head
-```
-
-This pulls from the `master` branch directly. We are usually careful about what we push there and this is the version we use ourselves in all of our projects.
-
-### Manually
 
 * Drag the `SVProgressHUD/SVProgressHUD` folder into your project.
 * Take care that `SVProgressHUD.bundle` is added to `Targets->Build Phases->Copy Bundle Resources`.
@@ -69,15 +49,17 @@ If you'd like the HUD to reflect the progress of a task, use one of these:
 
 ### Dismissing the HUD
 
-It can be dismissed right away using:
+It can be dismissed either right away or after a certain delay using:
 
 ```objective-c
++ (void)dismissAfterDuration:(NSTimeInterval)duration;
 + (void)dismiss;
 ```
 
 If you'd like to stack HUDs, you can balance out every show call using:
 
 ```objective-c
++ (void)popActivityAfterDuration:(NSTimeInterval)duration;
 + (void)popActivity;
 ```
 
@@ -96,13 +78,22 @@ Or show a confirmation glyph before before getting dismissed a little bit later.
 + (void)showImage:(UIImage*)image status:(NSString*)status maskType:(SVProgressHUDMaskType)maskType;
 ```
 
+## Cancelation
+
+The user can click on the shadow outside the hud to dismiss it, and this block provided by you will be called.
+
+```objective-c
++ (void)setCancelHandler:(SVProgressHUDHandlerBlock)cancelHandler;
+```
+
 ## Customization
 
 `SVProgressHUD` can be customized via the following methods:
 
 ```objective-c
 + (void)setBackgroundColor:(UIColor*)color;                 // default is [UIColor whiteColor]
-+ (void)setForegroundColor:(UIColor*)color;                 // default is [UIColor blackColor]
++ (void)setForegroundColor:(UIColor*)color;                 // default is [UIColor darkGrayColor]
++ (void)setOverlayColor:(UIColor*)color;                    // default is [UIColor colorWithWhite:0 alpha:0.5]
 + (void)setRingThickness:(CGFloat)width;                    // default is 4 pt
 + (void)setFont:(UIFont*)font;                              // default is [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline]
 + (void)setInfoImage:(UIImage*)image;                       // default is the bundled info image provided by Freepik
@@ -128,15 +119,10 @@ Each notification passes a `userInfo` dictionary holding the HUD's status string
 
 When using `SVProgressHUD` in an App Extension, #define SV_APP_EXTENSIONS to avoid using unavailable APIs. Additionally call `setViewForExtension:` from your extensions view controller with `self.view`.
 
-## Contributing to this project
-
-If you have feature requests or bug reports, feel free to help out by sending pull requests or by [creating new issues](https://github.com/samvermette/SVProgressHUD/issues/new). Please take a moment to
-review the guidelines written by [Nicolas Gallagher](https://github.com/necolas/):
-
-* [Bug reports](https://github.com/necolas/issue-guidelines/blob/master/CONTRIBUTING.md#bugs)
-* [Feature requests](https://github.com/necolas/issue-guidelines/blob/master/CONTRIBUTING.md#features)
-* [Pull requests](https://github.com/necolas/issue-guidelines/blob/master/CONTRIBUTING.md#pull-requests)
-
 ## Credits
 
-`SVProgressHUD` is brought to you by [Sam Vermette](http://samvermette.com) and [contributors to the project](https://github.com/samvermette/SVProgressHUD/contributors). If you're using `SVProgressHUD` in your project, attribution would be very appreciated. The info, success and error icons are made by [Freepik](http://www.freepik.com) from [Flaticon](www.flaticon.com) and are licensed under [Creative Commons BY 3.0](http://creativecommons.org/licenses/by/3.0/). 
+This fork is brought to you by [Tony Borner](https://github.com/tonyunreal).
+
+`SVProgressHUD` was created by [Sam Vermette](http://samvermette.com) and [contributors to the project](https://github.com/samvermette/SVProgressHUD/contributors). 
+
+The info, success and error icons are made by [Freepik](http://www.freepik.com) from [Flaticon](www.flaticon.com) and are licensed under [Creative Commons BY 3.0](http://creativecommons.org/licenses/by/3.0/). 
