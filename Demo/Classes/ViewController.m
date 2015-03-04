@@ -63,11 +63,19 @@ static float progress = 0.0f;
 
 - (IBAction)showWithProgress:(id)sender {
     progress = 0.0f;
+    [SVProgressHUD setCancelHandler:^{
+        progress = 1.0f;
+    }];
     [SVProgressHUD showProgress:0 status:@"Loading" maskType:SVProgressHUDMaskTypeBlack];
     [self performSelector:@selector(increaseProgress) withObject:nil afterDelay:0.3f];
 }
 
 - (void)increaseProgress {
+    if (progress >= 1.0f)
+    {
+        return;
+    }
+    
     progress+=0.1f;
     [SVProgressHUD showProgress:progress status:@"Loading" maskType:SVProgressHUDMaskTypeBlack];
 
