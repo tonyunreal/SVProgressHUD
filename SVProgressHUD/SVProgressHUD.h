@@ -25,12 +25,15 @@ typedef NS_ENUM(NSUInteger, SVProgressHUDMaskType) {
     SVProgressHUDMaskTypeGradient   // don't allow user interactions and dim the UI with a a-la-alert-view background gradient
 };
 
+typedef void (^SVProgressHUDHandlerBlock)();
+
 @interface SVProgressHUD : UIView
 
 #pragma mark - Customization
 
 + (void)setBackgroundColor:(UIColor*)color;                 // default is [UIColor whiteColor]
-+ (void)setForegroundColor:(UIColor*)color;                 // default is [UIColor blackColor]
++ (void)setForegroundColor:(UIColor*)color;                 // default is [UIColor darkGrayColor]
++ (void)setOverlayColor:(UIColor*)color;                 // default is [UIColor colorWithWhite:0 alpha:0.5]
 + (void)setRingThickness:(CGFloat)width;                    // default is 4 pt
 + (void)setFont:(UIFont*)font;                              // default is [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline]
 + (void)setInfoImage:(UIImage*)image;                       // default is the bundled info image provided by Freepik
@@ -70,10 +73,16 @@ typedef NS_ENUM(NSUInteger, SVProgressHUDMaskType) {
 + (void)setOffsetFromCenter:(UIOffset)offset;
 + (void)resetOffsetFromCenter;
 
++ (void)popActivityAfterDuration:(NSTimeInterval)duration;
 + (void)popActivity; // decrease activity count, if activity count == 0 the HUD is dismissed
++ (void)dismissAfterDuration:(NSTimeInterval)duration;
 + (void)dismiss;
 
 + (BOOL)isVisible;
+
+#pragma mark - cancel block
+
++ (void)setCancelHandler:(SVProgressHUDHandlerBlock)cancelHandler;
 
 @end
 

@@ -10,6 +10,14 @@
 #error SVProgressHUD is ARC only. Either turn on ARC for the project or use -fobjc-arc flag
 #endif
 
+#define IOS7_AND_ABOVE (NSClassFromString(@"UIAttachmentBehavior"))
+
+#define SV_OPACITY_IOS7 1.0
+#define SV_OPACITY 0.96
+#define SV_OPACITY_DEFAULT (IOS7_AND_ABOVE ? SV_OPACITY_IOS7 : SV_OPACITY)
+
+#define IPAD (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+
 #import "SVProgressHUD.h"
 #import "SVIndefiniteAnimatedView.h"
 #import <QuartzCore/QuartzCore.h>
@@ -25,6 +33,7 @@ NSString * const SVProgressHUDStatusUserInfoKey = @"SVProgressHUDStatusUserInfoK
 
 static UIColor *SVProgressHUDBackgroundColor;
 static UIColor *SVProgressHUDForegroundColor;
+static UIColor *SVProgressHUDOverlayColor;
 static CGFloat SVProgressHUDRingThickness;
 static UIFont *SVProgressHUDFont;
 static UIImage *SVProgressHUDInfoImage;
@@ -58,6 +67,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 @property (nonatomic, readonly) CGFloat visibleKeyboardHeight;
 @property (nonatomic, assign) UIOffset offsetFromCenter;
 
+@property (nonatomic, copy) SVProgressHUDHandlerBlock cancelHandler;
 
 - (void)showProgress:(float)progress status:(NSString*)string maskType:(SVProgressHUDMaskType)hudMaskType;
 - (void)showImage:(UIImage*)image status:(NSString*)status duration:(NSTimeInterval)duration maskType:(SVProgressHUDMaskType)hudMaskType;
@@ -87,17 +97,37 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 #pragma mark - Setters
 
 + (void)setStatus:(NSString *)string {
-	[[self sharedView] setStatus:string];
+    if ([self sharedView].activityCount > 0)
+    {
+        [[self sharedView] setStatus:string];
+    }
+    else
+    {
+        [self showWithStatus:string maskType:SVProgressHUDMaskTypeBlack];
+    }
 }
 
 + (void)setBackgroundColor:(UIColor *)color {
-    [self sharedView].hudView.backgroundColor = color;
+    if (IOS7_AND_ABOVE)
+    {
+        UIToolbar *hud = (UIToolbar *)[self sharedView].hudView;
+        hud.barTintColor = color;
+    }
+    else
+    {
+        [self sharedView].hudView.backgroundColor = color;
+    }
     SVProgressHUDBackgroundColor = color;
 }
 
 + (void)setForegroundColor:(UIColor *)color {
     [self sharedView];
     SVProgressHUDForegroundColor = color;
+}
+
++ (void)setOverlayColor:(UIColor*)color {
+    [self sharedView];
+    SVProgressHUDOverlayColor = color;
 }
 
 + (void)setFont:(UIFont *)font {
@@ -218,6 +248,10 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 #pragma mark - Dismiss Methods
 
++ (void)popActivityAfterDuration:(NSTimeInterval)duration {
+    [NSTimer scheduledTimerWithTimeInterval:duration target:self selector:@selector(popActivity) userInfo:nil repeats:NO];
+}
+
 + (void)popActivity {
     if([self sharedView].activityCount > 0)
         [self sharedView].activityCount--;
@@ -225,12 +259,17 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
         [[self sharedView] dismiss];
 }
 
-+ (void)dismiss {
-    if ([self isVisible]) {
-        [[self sharedView] dismiss];
-    }
++ (void)dismissAfterDuration:(NSTimeInterval)duration {
+    [[self sharedView] dismissAfterDuration:duration];
 }
 
++ (void)dismiss {
+    [[self sharedView] dismiss];
+}
+
++ (void)setCancelHandler:(void(^)())cancelHandler {
+    [[self sharedView] setCancelHandler:cancelHandler];
+}
 
 #pragma mark - Offset
 
@@ -252,16 +291,11 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 		self.alpha = 0.0f;
         self.activityCount = 0;
         
+        SVProgressHUDFont = [UIFont systemFontOfSize:(IPAD ? 20.0 : 14.0)];
         SVProgressHUDBackgroundColor = [UIColor whiteColor];
-        SVProgressHUDForegroundColor = [UIColor blackColor];
-        if ([UIFont respondsToSelector:@selector(preferredFontForTextStyle:)]) {
-            SVProgressHUDFont = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
-        } else {
-            SVProgressHUDFont = [UIFont systemFontOfSize:14.0f];
-            SVProgressHUDBackgroundColor = [UIColor colorWithWhite:0.0f alpha:0.8f];
-            SVProgressHUDForegroundColor = [UIColor whiteColor];
-        }
-        
+        SVProgressHUDForegroundColor = [UIColor darkGrayColor];
+        SVProgressHUDOverlayColor = [UIColor colorWithWhite:0 alpha:0.5];
+
         UIImage* infoImage = [UIImage imageNamed:@"SVProgressHUD.bundle/info"];
         UIImage* successImage = [UIImage imageNamed:@"SVProgressHUD.bundle/success"];
         UIImage* errorImage = [UIImage imageNamed:@"SVProgressHUD.bundle/error"];
@@ -289,7 +323,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     switch (self.maskType) {
         case SVProgressHUDMaskTypeBlack: {
             
-            [[UIColor colorWithWhite:0 alpha:0.5] set];
+            [SVProgressHUDOverlayColor set];
             CGContextFillRect(context, self.bounds);
             
             break;
@@ -319,8 +353,8 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 - (void)updatePosition {
 	
-    CGFloat hudWidth = 100.0f;
-    CGFloat hudHeight = 100.0f;
+    CGFloat hudWidth = 100.0;
+    CGFloat hudHeight = 100.0;
     CGFloat stringHeightBuffer = 20.0f;
     CGFloat stringAndContentHeightBuffer = 80.0f;
     
@@ -368,7 +402,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
         
         CGFloat labelRectY = (imageUsed || progressUsed) ? 68.0f : 9.0f;
         
-        if(hudHeight > 100.0f) {
+        if(hudHeight > 100.0) {
             labelRect = CGRectMake(12.0f, labelRectY, hudWidth, stringHeight);
             hudWidth += 24.0f;
         } else {
@@ -578,6 +612,17 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     if (CGRectContainsPoint(self.hudView.frame, touchLocation)) {
         [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDDidTouchDownInsideNotification object:event];
     }
+    else
+    {
+        // invoke cancel handler
+        if (self.cancelHandler)
+        {
+            dispatch_async(dispatch_get_main_queue(), self.cancelHandler);
+            self.cancelHandler = nil;
+        }
+        
+        [self dismiss];
+    }
 }
 
 
@@ -647,7 +692,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     self.overlayView.backgroundColor = [UIColor clearColor];
     [self positionHUD:nil];
     
-    if(self.alpha != 1 || self.hudView.alpha != 1) {
+    if(self.alpha != SV_OPACITY_DEFAULT || self.hudView.alpha != SV_OPACITY_DEFAULT) {
         NSDictionary *userInfo = [self notificationUserInfo];
         [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDWillAppearNotification
                                                             object:nil
@@ -657,7 +702,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
         self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 1.3, 1.3);
         
         if(self.isClear) {
-            self.alpha = 1;
+            self.alpha = SV_OPACITY_DEFAULT;
             self.hudView.alpha = 0;
         }
         
@@ -668,9 +713,9 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
                              self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 1/1.3, 1/1.3);
                              
                              if(self.isClear) // handle iOS 7 and 8 UIToolbar which not answers well to hierarchy opacity change
-                                 self.hudView.alpha = 1;
+                                 self.hudView.alpha = SV_OPACITY_DEFAULT;
                              else
-                                 self.alpha = 1;
+                                 self.alpha = SV_OPACITY_DEFAULT;
                          }
                          completion:^(BOOL finished){
                              [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDDidAppearNotification
@@ -731,11 +776,17 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     UIAccessibilityPostNotification(UIAccessibilityScreenChangedNotification, nil);
     UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, string);
     
-    self.fadeOutTimer = [NSTimer timerWithTimeInterval:duration target:self selector:@selector(dismiss) userInfo:nil repeats:NO];
-    [[NSRunLoop mainRunLoop] addTimer:self.fadeOutTimer forMode:NSRunLoopCommonModes];
+    [self.class popActivityAfterDuration:duration];
+}
+
+- (void)dismissAfterDuration:(NSTimeInterval)duration
+{
+    [NSTimer scheduledTimerWithTimeInterval:duration target:self selector:@selector(dismiss) userInfo:nil repeats:NO];
 }
 
 - (void)dismiss {
+    if ([self.class isVisible])
+    {
     NSDictionary *userInfo = [self notificationUserInfo];
     [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDWillDisappearNotification
                                                         object:nil
@@ -786,6 +837,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
                              //NSLog(@"keyWindow = %@", [UIApplication sharedApplication].keyWindow);
                          }
                      }];
+    }
 }
 
 
@@ -866,7 +918,8 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 #pragma mark - Utilities
 
 + (BOOL)isVisible {
-    return ([self sharedView].alpha == 1);
+    SVProgressHUD *hud = [self sharedView];
+    return hud.alpha > 0.5;
 }
 
 
@@ -892,9 +945,16 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 - (UIView *)hudView {
     if(!_hudView) {
-        _hudView = [[UIView alloc] initWithFrame:CGRectZero];
+        if (IOS7_AND_ABOVE)
+        {
+            _hudView = [[UIToolbar alloc] initWithFrame:CGRectZero];
+        }
+        else
+        {
+            _hudView = [[UIView alloc] initWithFrame:CGRectZero];
+        }
         _hudView.backgroundColor = SVProgressHUDBackgroundColor;
-        _hudView.layer.cornerRadius = 14;
+        _hudView.layer.cornerRadius = IPAD ? 10.0 : 7.0;
         _hudView.layer.masksToBounds = YES;
 
         _hudView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin |
