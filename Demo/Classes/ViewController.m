@@ -94,14 +94,23 @@ static float progress = 0.0f;
 
 - (IBAction)dismissInfo{
     [SVProgressHUD showInfoWithStatus:@"Useful Information." maskType:SVProgressHUDMaskTypeBlack];
+
+    // uncomment the line below to test hud delay for Chinese characters
+    //[SVProgressHUD showInfoWithStatus:@"这里有些信息需要您的关注，请仔细阅读。" maskType:SVProgressHUDMaskTypeBlack];
 }
 
 - (void)dismissSuccess {
-	[SVProgressHUD showSuccessWithStatus:@"Great Success!" maskType:SVProgressHUDMaskTypeBlack];
+    [SVProgressHUD showSuccessWithStatus:@"Great Success!" maskType:SVProgressHUDMaskTypeBlack];
+    
+    // uncomment the line below to test hud delay for Chinese characters
+	//[SVProgressHUD showSuccessWithStatus:@"操作完成!" maskType:SVProgressHUDMaskTypeBlack];
 }
 
 - (void)dismissError {
-	[SVProgressHUD showErrorWithStatus:@"Failed with Error" maskType:SVProgressHUDMaskTypeBlack];
+    [SVProgressHUD showErrorWithStatus:@"Failed with Error" maskType:SVProgressHUDMaskTypeBlack];
+    
+    // uncomment the line below to test hud delay for Chinese characters
+	//[SVProgressHUD showErrorWithStatus:@"操作失败了，这里是错误原因。" maskType:SVProgressHUDMaskTypeBlack];
 }
 
 @end

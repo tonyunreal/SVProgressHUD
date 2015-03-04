@@ -926,7 +926,16 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 #pragma mark - Getters
 
 - (NSTimeInterval)displayDurationForString:(NSString*)string {
-    return MIN((float)string.length*0.06 + 0.5, 5.0);
+    if ([string canBeConvertedToEncoding:NSASCIIStringEncoding])
+    {
+        // western characters
+        return MIN((float)string.length*0.06 + 0.5, 5.0);
+    }
+    else
+    {
+        // unicode string (probably Asian characters)
+        return MIN((float)string.length*0.2 + 0.4, 5.0);
+    }
 }
 
 - (BOOL)isClear { // used for iOS 7 and above
