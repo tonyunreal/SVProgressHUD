@@ -44,7 +44,11 @@ static UIView *SVProgressHUDExtensionView;
 
 static const CGFloat SVProgressHUDRingRadius = 18;
 static const CGFloat SVProgressHUDRingNoTextRadius = 24;
-static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
+#ifdef IPAD
+static const CGFloat SVProgressHUDParallaxDepthPoints = 15.0;
+#else
+static const CGFloat SVProgressHUDParallaxDepthPoints = 10.0;
+#endif
 static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 @interface SVProgressHUD ()
