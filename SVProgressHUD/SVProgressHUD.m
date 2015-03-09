@@ -42,13 +42,9 @@ static UIImage *SVProgressHUDErrorImage;
 static SVProgressHUDMaskType SVProgressHUDDefaultMaskType;
 static UIView *SVProgressHUDExtensionView;
 
-static const CGFloat SVProgressHUDRingRadius = 18;
-static const CGFloat SVProgressHUDRingNoTextRadius = 24;
-#ifdef IPAD
-static const CGFloat SVProgressHUDParallaxDepthPoints = 15.0;
-#else
-static const CGFloat SVProgressHUDParallaxDepthPoints = 10.0;
-#endif
+#define SVProgressHUDRingRadius (IPAD?24.0:18.0)
+#define SVProgressHUDRingNoTextRadius (IPAD?32.0:24.0)
+#define SVProgressHUDParallaxDepthPoints (IPAD?15.0:10.0)
 static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 @interface SVProgressHUD ()
@@ -290,20 +286,20 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 - (id)initWithFrame:(CGRect)frame {
     if ((self = [super initWithFrame:frame])) {
-		self.userInteractionEnabled = NO;
+        self.userInteractionEnabled = NO;
         self.backgroundColor = [UIColor clearColor];
-		self.alpha = 0.0f;
+        self.alpha = 0.0f;
         self.activityCount = 0;
         
         SVProgressHUDFont = [UIFont systemFontOfSize:(IPAD ? 20.0 : 16.0)];
         SVProgressHUDBackgroundColor = [UIColor whiteColor];
         SVProgressHUDForegroundColor = [UIColor darkGrayColor];
         SVProgressHUDOverlayColor = [UIColor colorWithWhite:0 alpha:0.5];
-
+        
         UIImage* infoImage = [UIImage imageNamed:@"SVProgressHUD.bundle/info"];
         UIImage* successImage = [UIImage imageNamed:@"SVProgressHUD.bundle/success"];
         UIImage* errorImage = [UIImage imageNamed:@"SVProgressHUD.bundle/error"];
-
+        
         if ([[UIImage class] instancesRespondToSelector:@selector(imageWithRenderingMode:)]) {
             SVProgressHUDInfoImage = [infoImage imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
             SVProgressHUDSuccessImage = [successImage imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
@@ -313,11 +309,11 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
             SVProgressHUDSuccessImage = successImage;
             SVProgressHUDErrorImage = errorImage;
         }
-
+        
         SVProgressHUDRingThickness = 2;
         SVProgressHUDDefaultMaskType = SVProgressHUDMaskTypeNone;
     }
-	
+    
     return self;
 }
 
@@ -356,11 +352,11 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 }
 
 - (void)updatePosition {
-	
-    CGFloat hudWidth = 100.0;
-    CGFloat hudHeight = 100.0;
-    CGFloat stringHeightBuffer = 20.0f;
-    CGFloat stringAndContentHeightBuffer = 80.0f;
+    
+    CGFloat hudWidth = IPAD ? 130.0 : 100.0;
+    CGFloat hudHeight = IPAD ? 130.0 : 100.0;
+    CGFloat stringHeightBuffer = IPAD ? 26.0 : 20.0;
+    CGFloat stringAndContentHeightBuffer = IPAD ? 104.0 : 80.0;
     
     CGFloat stringWidth = 0.0f;
     CGFloat stringHeight = 0.0f;
@@ -373,13 +369,13 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     BOOL progressUsed = (self.progress != SVProgressHUDUndefinedProgress) && (self.progress >= 0.0f);
     
     if(string) {
-        CGSize constraintSize = CGSizeMake(200.0f, 300.0f);
+        CGSize constraintSize = CGSizeMake(IPAD ? 260.0 : 200.0, IPAD ? 390.0 : 300.0);
         CGRect stringRect;
         if ([string respondsToSelector:@selector(boundingRectWithSize:options:attributes:context:)]) {
-          stringRect = [string boundingRectWithSize:constraintSize
-                                            options:(NSStringDrawingUsesFontLeading|NSStringDrawingTruncatesLastVisibleLine|NSStringDrawingUsesLineFragmentOrigin)
-                                         attributes:@{NSFontAttributeName: self.stringLabel.font}
-                                            context:NULL];
+            stringRect = [string boundingRectWithSize:constraintSize
+                                              options:(NSStringDrawingUsesFontLeading|NSStringDrawingTruncatesLastVisibleLine|NSStringDrawingUsesLineFragmentOrigin)
+                                           attributes:@{NSFontAttributeName: self.stringLabel.font}
+                                              context:NULL];
         } else {
             CGSize stringSize;
             
@@ -388,7 +384,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
             else
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
-                stringSize = [string sizeWithFont:self.stringLabel.font constrainedToSize:CGSizeMake(200.0f, 300.0f)];
+                stringSize = [string sizeWithFont:self.stringLabel.font constrainedToSize:CGSizeMake(IPAD ? 260.0 : 200.0, IPAD ? 390.0 : 300.0)];
 #pragma clang diagnostic pop
             
             stringRect = CGRectMake(0.0f, 0.0f, stringSize.width, stringSize.height);
@@ -404,40 +400,40 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
         if(stringWidth > hudWidth)
             hudWidth = ceil(stringWidth/2)*2;
         
-        CGFloat labelRectY = (imageUsed || progressUsed) ? 68.0f : 9.0f;
+        CGFloat labelRectY = (imageUsed || progressUsed) ? (IPAD?88.0:68.0) : (IPAD?12.0:9.0);
         
-        if(hudHeight > 100.0) {
-            labelRect = CGRectMake(12.0f, labelRectY, hudWidth, stringHeight);
-            hudWidth += 24.0f;
+        if(hudHeight > (IPAD?130.0:100.0)) {
+            labelRect = CGRectMake((IPAD?16.0:12.0), labelRectY, hudWidth, stringHeight);
+            hudWidth += IPAD ? 32.0 : 24.0;
         } else {
-            hudWidth += 24.0f;
+            hudWidth += IPAD ? 32.0 : 24.0;
             labelRect = CGRectMake(0.0f, labelRectY, hudWidth, stringHeight);
         }
     }
-	
-	self.hudView.bounds = CGRectMake(0.0f, 0.0f, hudWidth, hudHeight);
+    
+    self.hudView.bounds = CGRectMake(0.0f, 0.0f, hudWidth, hudHeight);
     
     if(string)
-        self.imageView.center = CGPointMake(CGRectGetWidth(self.hudView.bounds)/2, 36.0f);
-	else
+        self.imageView.center = CGPointMake(CGRectGetWidth(self.hudView.bounds)/2, IPAD ? 46.0 : 36.0);
+    else
        	self.imageView.center = CGPointMake(CGRectGetWidth(self.hudView.bounds)/2, CGRectGetHeight(self.hudView.bounds)/2);
-	
-	self.stringLabel.hidden = NO;
-	self.stringLabel.frame = labelRect;
+    
+    self.stringLabel.hidden = NO;
+    self.stringLabel.frame = labelRect;
     
     [CATransaction begin];
     [CATransaction setValue:(id)kCFBooleanTrue forKey:kCATransactionDisableActions];
-	
-	if(string) {
+    
+    if(string) {
         self.indefiniteAnimatedView.radius = SVProgressHUDRingRadius;
         [self.indefiniteAnimatedView sizeToFit];
         
-        CGPoint center = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), 36.0f);
+        CGPoint center = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), IPAD ? 46.0 : 36.0);
         self.indefiniteAnimatedView.center = center;
         
         if(self.progress != SVProgressHUDUndefinedProgress)
-            self.backgroundRingLayer.position = self.ringLayer.position = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), 36.0f);
-	} else {
+            self.backgroundRingLayer.position = self.ringLayer.position = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), IPAD ? 46.0 : 36.0);
+    } else {
         self.indefiniteAnimatedView.radius = SVProgressHUDRingNoTextRadius;
         [self.indefiniteAnimatedView sizeToFit];
         
@@ -452,7 +448,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 }
 
 - (void)setStatus:(NSString *)string {
-	self.stringLabel.text = string;
+    self.stringLabel.text = string;
     [self updatePosition];
     
 }
@@ -518,7 +514,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
         ignoreOrientation = YES;
     }
 #endif
-
+    
     if(notification) {
         NSDictionary* keyboardInfo = [notification userInfo];
         CGRect keyboardFrame = [[keyboardInfo valueForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue];
@@ -743,7 +739,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     CGContextFillRect(c, rect);
     UIImage *tintedImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
-
+    
     return tintedImage;
 }
 
@@ -754,7 +750,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     
     if(![self.class isVisible])
         [self.class showWithMaskType:self.maskType];
-  
+    
     if ([self.imageView respondsToSelector:@selector(setTintColor:)]) {
         self.imageView.tintColor = SVProgressHUDForegroundColor;
     } else {
@@ -791,56 +787,56 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 - (void)dismiss {
     if ([self.class isVisible])
     {
-    NSDictionary *userInfo = [self notificationUserInfo];
-    [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDWillDisappearNotification
-                                                        object:nil
-                                                      userInfo:userInfo];
-    
-    self.activityCount = 0;
-    [UIView animateWithDuration:0.15
-                          delay:0
-                        options:UIViewAnimationCurveEaseIn | UIViewAnimationOptionAllowUserInteraction
-                     animations:^{
-                         self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 0.8f, 0.8f);
-                         if(self.isClear) // handle iOS 7 UIToolbar not answer well to hierarchy opacity change
-                             self.hudView.alpha = 0.0f;
-                         else
-                             self.alpha = 0.0f;
-                     }
-                     completion:^(BOOL finished){
-                         if(self.alpha == 0.0f || self.hudView.alpha == 0.0f) {
-                             self.alpha = 0.0f;
-                             self.hudView.alpha = 0.0f;
-                             
-                             [[NSNotificationCenter defaultCenter] removeObserver:self];
-                             [self cancelRingLayerAnimation];
-                             [_hudView removeFromSuperview];
-                             _hudView = nil;
-                             
-                             [_overlayView removeFromSuperview];
-                             _overlayView = nil;
-                             
-                             [_indefiniteAnimatedView removeFromSuperview];
-                             _indefiniteAnimatedView = nil;
-                             
-                             UIAccessibilityPostNotification(UIAccessibilityScreenChangedNotification, nil);
-                             
-                             [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDDidDisappearNotification
-                                                                                 object:nil
-                                                                               userInfo:userInfo];
-                             
-                             // Tell the rootViewController to update the StatusBar appearance
-#if !defined(SV_APP_EXTENSIONS)
-                             UIViewController *rootController = [[UIApplication sharedApplication] keyWindow].rootViewController;
-                             if ([rootController respondsToSelector:@selector(setNeedsStatusBarAppearanceUpdate)]) {
-                                 [rootController setNeedsStatusBarAppearanceUpdate];
-                             }
-#endif
-                             // uncomment to make sure UIWindow is gone from app.windows
-                             //NSLog(@"%@", [UIApplication sharedApplication].windows);
-                             //NSLog(@"keyWindow = %@", [UIApplication sharedApplication].keyWindow);
+        NSDictionary *userInfo = [self notificationUserInfo];
+        [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDWillDisappearNotification
+                                                            object:nil
+                                                          userInfo:userInfo];
+        
+        self.activityCount = 0;
+        [UIView animateWithDuration:0.15
+                              delay:0
+                            options:UIViewAnimationCurveEaseIn | UIViewAnimationOptionAllowUserInteraction
+                         animations:^{
+                             self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 0.8f, 0.8f);
+                             if(self.isClear) // handle iOS 7 UIToolbar not answer well to hierarchy opacity change
+                                 self.hudView.alpha = 0.0f;
+                             else
+                                 self.alpha = 0.0f;
                          }
-                     }];
+                         completion:^(BOOL finished){
+                             if(self.alpha == 0.0f || self.hudView.alpha == 0.0f) {
+                                 self.alpha = 0.0f;
+                                 self.hudView.alpha = 0.0f;
+                                 
+                                 [[NSNotificationCenter defaultCenter] removeObserver:self];
+                                 [self cancelRingLayerAnimation];
+                                 [_hudView removeFromSuperview];
+                                 _hudView = nil;
+                                 
+                                 [_overlayView removeFromSuperview];
+                                 _overlayView = nil;
+                                 
+                                 [_indefiniteAnimatedView removeFromSuperview];
+                                 _indefiniteAnimatedView = nil;
+                                 
+                                 UIAccessibilityPostNotification(UIAccessibilityScreenChangedNotification, nil);
+                                 
+                                 [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDDidDisappearNotification
+                                                                                     object:nil
+                                                                                   userInfo:userInfo];
+                                 
+                                 // Tell the rootViewController to update the StatusBar appearance
+#if !defined(SV_APP_EXTENSIONS)
+                                 UIViewController *rootController = [[UIApplication sharedApplication] keyWindow].rootViewController;
+                                 if ([rootController respondsToSelector:@selector(setNeedsStatusBarAppearanceUpdate)]) {
+                                     [rootController setNeedsStatusBarAppearanceUpdate];
+                                 }
+#endif
+                                 // uncomment to make sure UIWindow is gone from app.windows
+                                 //NSLog(@"%@", [UIApplication sharedApplication].windows);
+                                 //NSLog(@"keyWindow = %@", [UIApplication sharedApplication].keyWindow);
+                             }
+                         }];
     }
 }
 
@@ -930,16 +926,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 #pragma mark - Getters
 
 - (NSTimeInterval)displayDurationForString:(NSString*)string {
-    if ([string canBeConvertedToEncoding:NSASCIIStringEncoding])
-    {
-        // western characters
-        return MIN((float)string.length*0.06 + 0.5, 5.0);
-    }
-    else
-    {
-        // unicode string (probably Asian characters)
-        return MIN((float)string.length*0.2 + 0.4, 5.0);
-    }
+    return MIN((float)string.length*0.06 + 0.5, 5.0);
 }
 
 - (BOOL)isClear { // used for iOS 7 and above
@@ -969,19 +956,19 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
         _hudView.backgroundColor = SVProgressHUDBackgroundColor;
         _hudView.layer.cornerRadius = IPAD ? 10.0 : 7.0;
         _hudView.layer.masksToBounds = YES;
-
+        
         _hudView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin |
                                      UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleLeftMargin);
-
+        
         if ([_hudView respondsToSelector:@selector(addMotionEffect:)]) {
             UIInterpolatingMotionEffect *effectX = [[UIInterpolatingMotionEffect alloc] initWithKeyPath: @"center.x" type: UIInterpolatingMotionEffectTypeTiltAlongHorizontalAxis];
             effectX.minimumRelativeValue = @(-SVProgressHUDParallaxDepthPoints);
             effectX.maximumRelativeValue = @(SVProgressHUDParallaxDepthPoints);
-
+            
             UIInterpolatingMotionEffect *effectY = [[UIInterpolatingMotionEffect alloc] initWithKeyPath: @"center.y" type: UIInterpolatingMotionEffectTypeTiltAlongVerticalAxis];
             effectY.minimumRelativeValue = @(-SVProgressHUDParallaxDepthPoints);
             effectY.maximumRelativeValue = @(SVProgressHUDParallaxDepthPoints);
-
+            
             UIMotionEffectGroup *effectGroup = [[UIMotionEffectGroup alloc] init];
             effectGroup.motionEffects = @[effectX, effectY];
             [_hudView addMotionEffect:effectGroup];
@@ -997,16 +984,16 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 - (UILabel *)stringLabel {
     if (!_stringLabel) {
         _stringLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-		_stringLabel.backgroundColor = [UIColor clearColor];
-		_stringLabel.adjustsFontSizeToFitWidth = YES;
+        _stringLabel.backgroundColor = [UIColor clearColor];
+        _stringLabel.adjustsFontSizeToFitWidth = YES;
         _stringLabel.textAlignment = NSTextAlignmentCenter;
-		_stringLabel.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
+        _stringLabel.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
         _stringLabel.numberOfLines = 0;
     }
     
     if(!_stringLabel.superview)
         [self.hudView addSubview:_stringLabel];
-
+    
     _stringLabel.textColor = SVProgressHUDForegroundColor;
     _stringLabel.font = SVProgressHUDFont;
     
