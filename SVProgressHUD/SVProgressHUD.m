@@ -47,6 +47,12 @@ static UIView *SVProgressHUDExtensionView;
 #define SVProgressHUDParallaxDepthPoints (IPAD?15.0:10.0)
 static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
+static BOOL SVProgressHUDNoCancelMode = NO;
+
+@interface SVRadialGradientLayer : CALayer
+@property (nonatomic) CGPoint gradientCenter;
+@end
+
 @interface SVProgressHUD ()
 
 @property (nonatomic, readwrite) SVProgressHUDMaskType maskType;
@@ -61,6 +67,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 @property (nonatomic, readwrite) CGFloat progress;
 @property (nonatomic, readwrite) NSUInteger activityCount;
+@property (nonatomic, strong) SVRadialGradientLayer *backgroundGradientLayer;
 @property (nonatomic, strong) CAShapeLayer *backgroundRingLayer;
 @property (nonatomic, strong) CAShapeLayer *ringLayer;
 
@@ -271,6 +278,12 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     [[self sharedView] setCancelHandler:cancelHandler];
 }
 
++ (void)setNoCancelMode:(BOOL)onoff
+{
+    SVProgressHUDNoCancelMode = onoff;
+}
+
+
 #pragma mark - Offset
 
 + (void)setOffsetFromCenter:(UIOffset)offset {
@@ -294,7 +307,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
         SVProgressHUDFont = [UIFont systemFontOfSize:(IPAD ? 20.0 : 16.0)];
         SVProgressHUDBackgroundColor = [UIColor whiteColor];
         SVProgressHUDForegroundColor = [UIColor darkGrayColor];
-        SVProgressHUDOverlayColor = [UIColor colorWithWhite:0 alpha:0.5];
+        SVProgressHUDOverlayColor = [UIColor colorWithWhite:0 alpha:0.4];
         
         UIImage* infoImage = [UIImage imageNamed:@"SVProgressHUD.bundle/info"];
         UIImage* successImage = [UIImage imageNamed:@"SVProgressHUD.bundle/success"];
@@ -315,40 +328,6 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     }
     
     return self;
-}
-
-- (void)drawRect:(CGRect)rect {
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    switch (self.maskType) {
-        case SVProgressHUDMaskTypeBlack: {
-            
-            [SVProgressHUDOverlayColor set];
-            CGContextFillRect(context, self.bounds);
-            
-            break;
-        }
-        case SVProgressHUDMaskTypeGradient: {
-            
-            size_t locationsCount = 2;
-            CGFloat locations[2] = {0.0f, 1.0f};
-            CGFloat colors[8] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.75f};
-            CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-            CGGradientRef gradient = CGGradientCreateWithColorComponents(colorSpace, colors, locations, locationsCount);
-            CGColorSpaceRelease(colorSpace);
-            
-            CGFloat freeHeight = CGRectGetHeight(self.bounds) - self.visibleKeyboardHeight;
-            
-            CGPoint center = CGPointMake(CGRectGetWidth(self.bounds)/2, freeHeight/2);
-            float radius = MIN(CGRectGetWidth(self.bounds) , CGRectGetHeight(self.bounds)) ;
-            CGContextDrawRadialGradient (context, gradient, center, 0, center, radius, kCGGradientDrawsAfterEndLocation);
-            CGGradientRelease(gradient);
-            
-            break;
-        }
-        default:
-            break;
-    }
 }
 
 - (void)updatePosition {
@@ -614,14 +593,18 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     }
     else
     {
-        // invoke cancel handler
-        if (self.cancelHandler)
+        // enforce no cancel mode if necessary
+        if (!SVProgressHUDNoCancelMode)
         {
-            dispatch_async(dispatch_get_main_queue(), self.cancelHandler);
-            self.cancelHandler = nil;
+            // invoke cancel handler
+            if (self.cancelHandler)
+            {
+                dispatch_async(dispatch_get_main_queue(), self.cancelHandler);
+                self.cancelHandler = nil;
+            }
+            
+            [self dismiss];
         }
-        
-        [self dismiss];
     }
 }
 
@@ -629,6 +612,31 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 #pragma mark - Master show/dismiss methods
 
 - (void)showProgress:(float)progress status:(NSString*)string maskType:(SVProgressHUDMaskType)hudMaskType {
+    
+    self.maskType = hudMaskType;
+    switch (self.maskType) {
+            
+        case SVProgressHUDMaskTypeBlack: {
+            self.backgroundColor = SVProgressHUDOverlayColor;
+            break;
+        }
+            
+        case SVProgressHUDMaskTypeGradient: {
+            self.backgroundGradientLayer = [SVRadialGradientLayer layer];
+            self.backgroundGradientLayer.frame = self.bounds;
+            CGPoint gradientCenter = self.center;
+            gradientCenter.y = (self.bounds.size.height - self.visibleKeyboardHeight) / 2;
+            self.backgroundGradientLayer.gradientCenter = gradientCenter;
+            [self.backgroundGradientLayer setNeedsDisplay];
+            
+            [self.layer addSublayer:self.backgroundGradientLayer];
+            break;
+        }
+        default:
+            break;
+    }
+    
+    
     if(!self.overlayView.superview){
 #if !defined(SV_APP_EXTENSIONS)
         NSEnumerator *frontToBackWindows = [UIApplication.sharedApplication.windows reverseObjectEnumerator];
@@ -657,7 +665,6 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     
     self.fadeOutTimer = nil;
     self.imageView.hidden = YES;
-    self.maskType = hudMaskType;
     self.progress = progress;
     
     self.stringLabel.text = string;
@@ -819,6 +826,9 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
                                  [_indefiniteAnimatedView removeFromSuperview];
                                  _indefiniteAnimatedView = nil;
                                  
+                                 [self.backgroundGradientLayer removeFromSuperlayer];
+                                 self.backgroundGradientLayer = nil;
+                                 
                                  UIAccessibilityPostNotification(UIAccessibilityScreenChangedNotification, nil);
                                  
                                  [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDDidDisappearNotification
@@ -954,7 +964,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
             _hudView = [[UIView alloc] initWithFrame:CGRectZero];
         }
         _hudView.backgroundColor = SVProgressHUDBackgroundColor;
-        _hudView.layer.cornerRadius = IPAD ? 10.0 : 7.0;
+        _hudView.layer.cornerRadius = 13.0;
         _hudView.layer.masksToBounds = YES;
         
         _hudView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin |
@@ -1038,3 +1048,19 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 @end
 
+@implementation SVRadialGradientLayer
+
+- (void)drawInContext:(CGContextRef)context {
+    size_t locationsCount = 2;
+    CGFloat locations[2] = {0.0f, 1.0f};
+    CGFloat colors[8] = {0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.75f};
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGGradientRef gradient = CGGradientCreateWithColorComponents(colorSpace, colors, locations, locationsCount);
+    CGColorSpaceRelease(colorSpace);
+    
+    float radius = MIN(self.bounds.size.width , self.bounds.size.height) ;
+    CGContextDrawRadialGradient (context, gradient, self.gradientCenter, 0, self.gradientCenter, radius, kCGGradientDrawsAfterEndLocation);
+    CGGradientRelease(gradient);
+}
+
+@end

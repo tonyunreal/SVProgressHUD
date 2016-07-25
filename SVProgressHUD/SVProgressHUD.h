@@ -33,7 +33,7 @@ typedef void (^SVProgressHUDHandlerBlock)();
 
 + (void)setBackgroundColor:(UIColor*)color;                 // default is [UIColor whiteColor]
 + (void)setForegroundColor:(UIColor*)color;                 // default is [UIColor darkGrayColor]
-+ (void)setOverlayColor:(UIColor*)color;                    // default is [UIColor colorWithWhite:0 alpha:0.5]
++ (void)setOverlayColor:(UIColor*)color;                 // default is [UIColor colorWithWhite:0 alpha:0.5]
 + (void)setRingThickness:(CGFloat)width;                    // default is 4 pt
 + (void)setFont:(UIFont*)font;                              // default is [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline]
 + (void)setInfoImage:(UIImage*)image;                       // default is the bundled info image provided by Freepik
@@ -83,6 +83,8 @@ typedef void (^SVProgressHUDHandlerBlock)();
 #pragma mark - cancel block
 
 + (void)setCancelHandler:(SVProgressHUDHandlerBlock)cancelHandler;
+
++ (void)setNoCancelMode:(BOOL)onoff;
 
 @end
 
